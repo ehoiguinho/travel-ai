@@ -27,9 +27,11 @@ public class ViagemController : ControllerBase
     }
 
     [HttpGet("{id}")]
-    public async Task<ActionResult<Viagem>> GetViagem(int id)
+    public async Task<IActionResult> GetViagem(int id)
     {
         var viagem = await _context.Viagens
+            .Include(v => v.ViagemCategorias)
+                .ThenInclude(vc => vc.Categoria)
             .AsNoTracking()
             .FirstOrDefaultAsync(v => v.Id == id);
 
@@ -38,7 +40,26 @@ public class ViagemController : ControllerBase
             return NotFound(new { mensagem = "Viagem não encontrada." });
         }
 
-        return Ok(viagem);
+        var resultado = new
+        {
+            viagem.Id,
+            viagem.Nome,
+            viagem.Pais,
+            viagem.Cidade,
+            viagem.Descricao,
+            viagem.Preco,
+            viagem.DuracaoDias,
+
+            Categorias = viagem.ViagemCategorias
+                .Select(vc => new
+                {
+                    vc.Categoria.Id,
+                    vc.Categoria.Nome
+                })
+                .ToList()
+        };
+
+        return Ok(resultado);
     }
 
     [HttpPost]
@@ -88,6 +109,56 @@ public class ViagemController : ControllerBase
             new { id = viagem.Id },
             viagem
         );
+    }
+
+    [HttpPost("{viagemId}/categorias/{categoriaId}")]
+    public async Task<IActionResult> AdicionarCategoria(
+        int viagemId,
+        int categoriaId)
+    {
+        var viagem = await _context.Viagens
+            .FirstOrDefaultAsync(v => v.Id == viagemId);
+
+        if (viagem == null)
+        {
+            return NotFound(new { mensagem = "Viagem não encontrada." });
+        }
+
+        var categoria = await _context.Categorias
+            .FirstOrDefaultAsync(c => c.Id == categoriaId);
+
+        if (categoria == null)
+        {
+            return NotFound(new { mensagem = "Categoria não encontrada." });
+        }
+
+        var relacionamentoExiste = await _context.ViagemCategorias
+            .AnyAsync(vc =>
+                vc.ViagemId == viagemId &&
+                vc.CategoriaId == categoriaId);
+
+        if (relacionamentoExiste)
+        {
+            return Conflict(new
+            {
+                mensagem = "Essa categoria já está associada à viagem."
+            });
+        }
+
+        var viagemCategoria = new ViagemCategoria
+        {
+            ViagemId = viagemId,
+            CategoriaId = categoriaId
+        };
+
+        _context.ViagemCategorias.Add(viagemCategoria);
+
+        await _context.SaveChangesAsync();
+
+        return Ok(new
+        {
+            mensagem = "Categoria adicionada à viagem com sucesso."
+        }); 
     }
 
     [HttpPut("{id}")]

@@ -10,7 +10,7 @@ public class Compra
 
     public DateTime DataCompra { get; set; } = DateTime.UtcNow;
 
-    public Usuario Usuario { get; set; } = null!;
+    public Usuario? Usuario { get; set; }
 
-    public Viagem Viagem { get; set; } = null!;
+    public Viagem? Viagem { get; set; }
 }
