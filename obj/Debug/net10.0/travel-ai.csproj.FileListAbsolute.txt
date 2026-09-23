@@ -120,3 +120,4 @@
 /Users/oi/Documents/GitHub/travel-ai/obj/Debug/net10.0/travel-ai.pdb
 /Users/oi/Documents/GitHub/travel-ai/obj/Debug/net10.0/travel-ai.genruntimeconfig.cache
 /Users/oi/Documents/GitHub/travel-ai/obj/Debug/net10.0/ref/travel-ai.dll
+/Users/oi/Documents/GitHub/travel-ai/obj/Debug/net10.0/travel-ai.sourcelink.json
