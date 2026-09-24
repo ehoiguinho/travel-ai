@@ -1,5 +1,6 @@
 using Microsoft.EntityFrameworkCore;
 using TravelAI.Models;
+using Pgvector;
 
 namespace TravelAI.Data;
 
@@ -11,17 +12,16 @@ public class AppDbContext : DbContext
     }
 
     public DbSet<Usuario> Usuarios => Set<Usuario>();
-
     public DbSet<Viagem> Viagens => Set<Viagem>();
-
     public DbSet<Categoria> Categorias => Set<Categoria>();
-
     public DbSet<Compra> Compras => Set<Compra>();
     public DbSet<ViagemCategoria> ViagemCategorias => Set<ViagemCategoria>();
+    public DbSet<KnowledgeChunk> KnowledgeChunks => Set<KnowledgeChunk>();
 
     protected override void OnModelCreating(ModelBuilder modelBuilder)
     {
         base.OnModelCreating(modelBuilder);
+        modelBuilder.HasPostgresExtension("vector");
 
         modelBuilder.Entity<Usuario>(entity =>
         {
@@ -115,6 +115,24 @@ public class AppDbContext : DbContext
             entity.HasOne(c => c.Viagem)
                 .WithMany(v => v.Compras)
                 .HasForeignKey(c => c.ViagemId)
+                .OnDelete(DeleteBehavior.Cascade);
+        });
+
+        modelBuilder.Entity<KnowledgeChunk>(entity =>
+        {
+            entity.ToTable("knowledge_chunks");
+
+            entity.HasKey(k => k.Id);
+
+            entity.Property(k => k.Content)
+                .IsRequired();
+
+            entity.Property(k => k.Embedding)
+                .HasColumnType("vector(1024)");
+
+            entity.HasOne(k => k.Viagem)
+                .WithMany()
+                .HasForeignKey(k => k.ViagemId)
                 .OnDelete(DeleteBehavior.Cascade);
         });
     }

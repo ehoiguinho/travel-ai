@@ -2,6 +2,7 @@
 using System;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.EntityFrameworkCore.Infrastructure;
+using Microsoft.EntityFrameworkCore.Migrations;
 using Microsoft.EntityFrameworkCore.Storage.ValueConversion;
 using Npgsql.EntityFrameworkCore.PostgreSQL.Metadata;
 using Pgvector;
@@ -12,9 +13,11 @@ using TravelAI.Data;
 namespace travel_ai.Migrations
 {
     [DbContext(typeof(AppDbContext))]
-    partial class AppDbContextModelSnapshot : ModelSnapshot
+    [Migration("20260923200531_AddKnowledgeChunks")]
+    partial class AddKnowledgeChunks
     {
-        protected override void BuildModel(ModelBuilder modelBuilder)
+        /// <inheritdoc />
+        protected override void BuildTargetModel(ModelBuilder modelBuilder)
         {
 #pragma warning disable 612, 618
             modelBuilder
@@ -81,7 +84,7 @@ namespace travel_ai.Migrations
                         .HasColumnType("text");
 
                     b.Property<Vector>("Embedding")
-                        .HasColumnType("vector(1024)");
+                        .HasColumnType("vector(768)");
 
                     b.Property<int>("ViagemId")
                         .HasColumnType("integer");
