@@ -22,7 +22,7 @@ public class KnowledgeService
     {
     var viagens = await _context.Viagens
         .Include(v => v.ViagemCategorias)
-            .ThenInclude(vc => vc.Categoria)
+        .ThenInclude(vc => vc.Categoria)
         .AsNoTracking()
         .ToListAsync();
 
@@ -108,6 +108,6 @@ public class KnowledgeService
 
             Viagem = x.Knowledge.Viagem!
         }).ToList();
-        
+
     }
 }

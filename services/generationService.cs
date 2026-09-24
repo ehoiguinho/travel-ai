@@ -17,9 +17,7 @@ public class GenerationService
             );
     }
 
-    public async Task<string> GerarRespostaAsync(
-        string pergunta,
-        string contexto)
+    public async Task<string> GerarRespostaAsync(string pergunta, string contexto)
     {
         var url = "https://api.cohere.com/v2/chat";
 
