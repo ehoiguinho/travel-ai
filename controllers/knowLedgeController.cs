@@ -53,7 +53,8 @@ public class KnowledgeController : ControllerBase
                 k.Viagem.Pais,
                 k.Viagem.Cidade
             },
-            k.Content
+            k.Content,
+            similaridade = Math.Round(k.Similaridade, 4)
         }));
     }
 }

@@ -12,8 +12,10 @@ builder.Services.AddDbContext<AppDbContext>(options =>
     ));
 
 builder.Services.AddHttpClient<EmbeddingService>();
+builder.Services.AddHttpClient<GenerationService>();
 builder.Services.AddScoped<KnowledgeService>();
 builder.Services.AddControllers();
+
 builder.Services.AddOpenApi();
 
 var app = builder.Build();

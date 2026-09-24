@@ -20,75 +20,94 @@ public class KnowledgeService
 
     public async Task<int> IndexarViagensAsync()
     {
-        var viagens = await _context.Viagens
-            .Include(v => v.ViagemCategorias)
-                .ThenInclude(vc => vc.Categoria)
-            .AsNoTracking()
-            .ToListAsync();
+    var viagens = await _context.Viagens
+        .Include(v => v.ViagemCategorias)
+            .ThenInclude(vc => vc.Categoria)
+        .AsNoTracking()
+        .ToListAsync();
 
-        foreach (var viagem in viagens)
+    foreach (var viagem in viagens)
+    {
+        var categorias = string.Join(
+            ", ",
+            viagem.ViagemCategorias
+                .Select(vc => vc.Categoria.Nome)
+        );
+
+        var conteudo = $"""
+            Nome: {viagem.Nome}
+            País: {viagem.Pais}
+            Cidade: {viagem.Cidade}
+            Descrição: {viagem.Descricao}
+            Duração: {viagem.DuracaoDias} dias
+            Preço: R$ {viagem.Preco:F2}
+            Categorias: {categorias}
+            """;
+
+        var embedding =
+            await _embeddingService
+                .GerarEmbeddingDocumentoAsync(conteudo);
+
+        var chunkExistente = await _context.KnowledgeChunks
+            .FirstOrDefaultAsync(k => k.ViagemId == viagem.Id);
+
+        if (chunkExistente != null)
         {
-            var categorias = string.Join(
-                ", ",
-                viagem.ViagemCategorias
-                    .Select(vc => vc.Categoria.Nome)
-            );
-
-            var conteudo = $"""
-                Nome: {viagem.Nome}
-                País: {viagem.Pais}
-                Cidade: {viagem.Cidade}
-                Descrição: {viagem.Descricao}
-                Duração: {viagem.DuracaoDias} dias
-                Preço: R$ {viagem.Preco:F2}
-                Categorias: {categorias}
-                """;
-
-            var embedding =
-                await _embeddingService
-                    .GerarEmbeddingDocumentoAsync(conteudo);
-
-            var chunkExistente = await _context.KnowledgeChunks
-                .FirstOrDefaultAsync(k => k.ViagemId == viagem.Id);
-
-            if (chunkExistente != null)
-            {
-                chunkExistente.Content = conteudo;
-                chunkExistente.Embedding = embedding;
-            }
-            else
-            {
-                var chunk = new KnowledgeChunk
-                {
-                    ViagemId = viagem.Id,
-                    Content = conteudo,
-                    Embedding = embedding
-                };
-
-                _context.KnowledgeChunks.Add(chunk);
-            }
+            chunkExistente.Content = conteudo;
+            chunkExistente.Embedding = embedding;
         }
+        else
+        {
+            var chunk = new KnowledgeChunk
+            {
+                ViagemId = viagem.Id,
+                Content = conteudo,
+                Embedding = embedding
+            };
 
-        await _context.SaveChangesAsync();
-
-        return viagens.Count;
+            _context.KnowledgeChunks.Add(chunk);
+        }
     }
 
-        public async Task<List<KnowledgeChunk>> BuscarAsync(
-        string consulta,
-        int quantidade = 5)
+    await _context.SaveChangesAsync();
+
+    return viagens.Count;
+}
+
+    public async Task<List<KnowledgeSearchResult>> BuscarAsync(string consulta, int quantidade = 5)
     {
-        var embeddingConsulta =
-            await _embeddingService
-                .GerarEmbeddingConsultaAsync(consulta);
+    var embeddingConsulta =
+        await _embeddingService
+            .GerarEmbeddingConsultaAsync(consulta);
 
-        var resultados = await _context.KnowledgeChunks
-            .Include(k => k.Viagem)
-            .OrderBy(k => k.Embedding!.CosineDistance(embeddingConsulta))
-            .Take(quantidade)
-            .AsNoTracking()
-            .ToListAsync();
+    var resultados = await _context.KnowledgeChunks
+        .Include(k => k.Viagem)
+        .Select(k => new
+        {
+            Knowledge = k,
 
-        return resultados;
+            Distancia = k.Embedding!
+                .CosineDistance(embeddingConsulta)
+        })
+        .OrderBy(x => x.Distancia)
+        .Take(quantidade)
+        .AsNoTracking()
+        .ToListAsync();
+
+    const double threshold = 0.30;
+
+    return resultados
+        .Where(x => (1 - x.Distancia) >= threshold)
+        .Select(x => new KnowledgeSearchResult
+        {
+            Id = x.Knowledge.Id,
+            ViagemId = x.Knowledge.ViagemId,
+            Content = x.Knowledge.Content,
+
+            Similaridade = (decimal)(1 - x.Distancia),
+
+            Viagem = x.Knowledge.Viagem!
+        }).ToList();
+        
     }
 }
